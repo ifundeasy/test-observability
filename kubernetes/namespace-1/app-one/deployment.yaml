@@ -1,0 +1,57 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-one-config
+  namespace: namespace-1
+data:
+  APP_NAME: service-one
+  APP_PORT: "3000"
+  OTEL_RPC_URI: host.docker.internal:4317
+  EXTERNAL_API: http://app-two-service.namespace-2.svc.cluster.local:3000/products
+  MONGO_URI: mongodb://root:mypswd123@host.docker.internal:27017
+  MONGO_DB_NAME: monitoring
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-one-deployment
+  namespace: namespace-1
+  labels:
+    app: app-one
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: app-one
+  template:
+    metadata:
+      labels:
+        app: app-one
+    spec:
+      containers:
+        - name: app-one
+          image: ifundeasy/simple-crud:latest
+          ports:
+            - containerPort: 3000
+          envFrom:
+            - configMapRef:
+                name: app-one-config
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: app-one-service
+  namespace: namespace-1
+spec:
+  selector:
+    app: app-one
+  ports:
+    - protocol: TCP
+      port: 3000
+      targetPort: 3000
+      nodePort: 32761
+  type: NodePort

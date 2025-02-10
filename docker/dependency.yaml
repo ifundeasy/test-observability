@@ -1,0 +1,55 @@
+name: observability
+
+services:
+
+  mongodb:
+    image: mongo:latest
+    networks:
+      - network-observability
+    volumes:
+      - data-observability-mongodb:/data/db
+    ports:
+      - "27017:27017"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=root
+      - MONGO_INITDB_ROOT_PASSWORD=mypswd123
+
+  mysql:
+    image: mysql:8.0.34
+    networks:
+      - network-observability
+    environment:
+      MYSQL_ROOT_PASSWORD: myRootPassword123
+      MYSQL_DATABASE: grafana
+      MYSQL_USER: default
+      MYSQL_PASSWORD: mypswd123
+    ports:
+      - '3306:3306'
+    volumes:
+      - data-observability-mysql:/var/lib/mysql
+
+  localstack:
+    image: 'localstack/localstack:4.1.1'
+    networks:
+      - network-observability
+    environment:
+      - SERVICES=s3
+    ports:
+      - '4566:4566'
+      # - '4510-4559:4510-4559'
+    volumes:
+      - data-observability-localstack:/tmp/localstack'
+      - '/var/run/docker.sock:/var/run/docker.sock'
+    healthcheck:
+      test: "bash -c 'AWS_ACCESS_KEY_ID=default AWS_SECRET_ACCESS_KEY=mypswd123 aws --endpoint-url=http://127.0.0.1:4566 s3 ls'"
+      retries: 5
+      interval: 10s
+
+volumes:
+  data-observability-mongodb:
+  data-observability-mysql:
+  data-observability-localstack:
+
+networks:
+  network-observability:
+    driver: bridge

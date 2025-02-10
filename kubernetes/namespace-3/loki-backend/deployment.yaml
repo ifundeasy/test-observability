@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: loki-backend
+  namespace: namespace-3
+  labels:
+    app: loki
+    role: backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: loki
+      role: backend
+  template:
+    metadata:
+      labels:
+        app: loki
+        role: backend
+    spec:
+      containers:
+      - name: loki
+        image: grafana/loki:3.3.2
+        args:
+        - -config.file=/etc/loki/loki-config.yaml
+        - -target=backend
+        - -legacy-read-mode=false
+        volumeMounts:
+        - name: config
+          mountPath: /etc/loki
+          readOnly: true
+        - name: rules
+          mountPath: /etc/loki/rules
+          readOnly: true
+      volumes:
+      - name: config
+        configMap:
+          name: loki-backend-config
+      - name: rules
+        configMap:
+          name: loki-rules

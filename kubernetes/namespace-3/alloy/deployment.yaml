@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: alloy
+  namespace: namespace-3
+  labels:
+    app: alloy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: alloy
+  template:
+    metadata:
+      labels:
+        app: alloy
+    spec:
+      containers:
+        - name: alloy
+          image: grafana/alloy:v1.6.1
+          command: ["/bin/alloy", "run", "/etc/alloy/config.alloy"]
+          ports:
+            - containerPort: 12345
+            - containerPort: 4317
+            - containerPort: 4318
+          volumeMounts:
+            - name: config-volume
+              mountPath: /etc/alloy
+              readOnly: true
+      volumes:
+        - name: config-volume
+          configMap:
+            name: alloy-config

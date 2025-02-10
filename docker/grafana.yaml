@@ -1,0 +1,9 @@
+name: observability
+
+services:
+
+volumes:
+
+networks:
+  network-observability:
+    driver: bridge
