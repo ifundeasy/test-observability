@@ -12,7 +12,7 @@ services:
       - data-observability-alloy:/var/lib/alloy
 
       # scenario -- this alloy config will watch all of container STDOUT logs
-      - ./config/config.alloy:/etc/alloy/config.alloy
+      - ./config/alloy-config.alloy:/etc/alloy/config.alloy
 
        # binding docker.sock so alloy can access through docker unix socket from inside container
       - /var/run/docker.sock:/var/run/docker.sock
@@ -33,7 +33,7 @@ services:
       # - "7946:7946"
     volumes:
       - data-observability-loki:/etc/loki
-      - ./config/loki.yaml:/etc/loki/loki.yaml
+      - ./config/loki-config.yaml:/etc/loki/loki.yaml
     command: -config.file=/etc/loki/loki.yaml -legacy-read-mode=false
     networks:
       - network-observability

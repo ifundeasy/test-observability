@@ -1,5 +1,13 @@
 discovery.docker "containers" {
-  host = "unix:///var/run/docker.sock"
+  host   = "unix:///var/run/docker.sock"
+  // filter {
+  //   name   = "xxx"
+  //   values = "yyy"
+  // }
+  filter {
+    name   = "label"
+    values = ["com.host.description=app"]
+  }
 }
 
 loki.source.docker "default" {
