@@ -1,0 +1,38 @@
+name: observability-test
+
+services:
+
+  mongodb:
+    image: mongo:latest
+    networks:
+      - network-observability-test
+    volumes:
+      - data-observability-test-mongodb:/data/db
+    ports:
+      - "27017:27017"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=root
+      - MONGO_INITDB_ROOT_PASSWORD=mypswd123
+
+  app:
+    image: ifundeasy/simple-crud:latest
+    networks:
+      - network-observability-test
+    environment:
+      APP_NAME: app
+      APP_PORT: "3000"
+      OTEL_RPC_URI: host.docker.internal:4317
+      EXTERNAL_API: http://app:3000/products
+      MONGO_URI: mongodb://root:mypswd123@mongodb:27017
+      MONGO_DB_NAME: monitoring
+    ports:
+      - '4000:3000'
+    depends_on:
+      - mongodb
+
+volumes:
+  data-observability-test-mongodb:
+
+networks:
+  network-observability-test:
+    driver: bridge

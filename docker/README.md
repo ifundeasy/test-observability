@@ -1,15 +1,13 @@
 # test-observability/docker
 
-## Run
+## Run Grafana Dependency
 ```bash
-cd docker
+cd observability-party
 docker compose up -d
-docker compose down -v
 ```
 
-## Run Only grafana party
+## Run Grafana Stack
 ```bash
-cd docker
-docker compose -f ./dependency.yaml up -d
-docker compose -f ./dependency.yaml down -v
+cd observability-party
+docker compose up -d
 ```

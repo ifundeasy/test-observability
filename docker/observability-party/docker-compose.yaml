@@ -1,23 +1,11 @@
-name: observability
+name: observability-party
 
 services:
-
-  mongodb:
-    image: mongo:latest
-    networks:
-      - network-observability
-    volumes:
-      - data-observability-mongodb:/data/db
-    ports:
-      - "27017:27017"
-    environment:
-      - MONGO_INITDB_ROOT_USERNAME=root
-      - MONGO_INITDB_ROOT_PASSWORD=mypswd123
 
   mysql:
     image: mysql:8.0.34
     networks:
-      - network-observability
+      - network-observability-party
     environment:
       MYSQL_ROOT_PASSWORD: myRootPassword123
       MYSQL_DATABASE: grafana
@@ -26,30 +14,42 @@ services:
     ports:
       - '3306:3306'
     volumes:
-      - data-observability-mysql:/var/lib/mysql
+      - data-observability-party-mysql:/var/lib/mysql
 
   localstack:
     image: 'localstack/localstack:4.1.1'
     networks:
-      - network-observability
+      - network-observability-party
     environment:
       - SERVICES=s3
     ports:
       - '4566:4566'
       # - '4510-4559:4510-4559'
     volumes:
-      - data-observability-localstack:/tmp/localstack'
+      - data-observability-party-localstack:/tmp/localstack'
       - '/var/run/docker.sock:/var/run/docker.sock'
     healthcheck:
       test: "bash -c 'AWS_ACCESS_KEY_ID=default AWS_SECRET_ACCESS_KEY=mypswd123 aws --endpoint-url=http://127.0.0.1:4566 s3 ls'"
       retries: 5
       interval: 10s
 
+  init-bucket:
+    image: amazon/aws-cli
+    networks:
+      - network-observability-party
+    environment:
+      - AWS_ACCESS_KEY_ID=default
+      - AWS_SECRET_ACCESS_KEY=mypswd123
+      - AWS_DEFAULT_REGION=us-east-1
+    restart: no
+    entrypoint: ["sh", "-c", "aws --endpoint-url=http://localstack:4566 s3 mb s3://loki-data"]
+    depends_on:
+      - localstack
+
 volumes:
-  data-observability-mongodb:
-  data-observability-mysql:
-  data-observability-localstack:
+  data-observability-party-mysql:
+  data-observability-party-localstack:
 
 networks:
-  network-observability:
+  network-observability-party:
     driver: bridge

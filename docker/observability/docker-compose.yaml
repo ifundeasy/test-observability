@@ -1,0 +1,68 @@
+name: observability
+
+services:
+
+  alloy:
+    image: grafana/alloy:latest
+    ports:
+      - 12345:12345
+      - 4317:4317
+      - 4318:4318
+    volumes:
+      - data-observability-alloy:/var/lib/alloy
+
+      # scenario -- this alloy config will watch all of container STDOUT logs
+      - ./config/config.alloy:/etc/alloy/config.alloy
+
+       # binding docker.sock so alloy can access through docker unix socket from inside container
+      - /var/run/docker.sock:/var/run/docker.sock
+
+      # docker log directory as default, even though you app not writing to file.
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+    command: run --server.http.listen-addr=0.0.0.0:12345 --storage.path=/var/lib/alloy/data /etc/alloy/config.alloy
+    depends_on:
+      - loki
+    networks:
+      - network-observability
+
+  loki:
+    image: grafana/loki:3.3.2
+    ports:
+      - "3100:3100"
+      - "9095:9095"
+      # - "7946:7946"
+    volumes:
+      - data-observability-loki:/etc/loki
+      - ./config/loki.yaml:/etc/loki/loki.yaml
+    command: -config.file=/etc/loki/loki.yaml -legacy-read-mode=false
+    networks:
+      - network-observability
+
+  grafana:
+    image: grafana/grafana:11.5.1
+    environment:
+      GF_DATABASE_TYPE: mysql
+      GF_DATABASE_HOST: host.docker.internal:3306
+      GF_DATABASE_NAME: grafana
+      GF_DATABASE_USER: default
+      GF_DATABASE_PASSWORD: mypswd123
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    ports:
+      - 3000:3000/tcp
+    volumes:
+      - data-observability-grafana:/var/lib/grafana
+      - ./config/grafana-datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yml
+    networks:
+      - network-observability
+    depends_on:
+      - loki
+
+volumes:
+  data-observability-alloy:
+  data-observability-loki:
+  data-observability-grafana:
+
+networks:
+  network-observability:
+    driver: bridge
