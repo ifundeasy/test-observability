@@ -1,0 +1,58 @@
+name: simple-crud
+
+services:
+
+  mongodb:
+    image: mongo:latest
+    volumes:
+      - data-simple-crud-mongodb:/data/db
+    ports:
+      - "27017:27017"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=root
+      - MONGO_INITDB_ROOT_PASSWORD=mypswd123
+    networks:
+      - network-simple-crud
+
+  app-one:
+    labels:
+      - com.host.description=app
+    image: ifundeasy/simple-crud:latest
+    environment:
+      APP_NAME: app-one
+      APP_PORT: "3000"
+      OTEL_RPC_URI: host.docker.internal:4317
+      EXTERNAL_API: http://app-two:3000/products
+      MONGO_URI: mongodb://root:mypswd123@mongodb:27017
+      MONGO_DB_NAME: monitoring
+    ports:
+      - '4000:3000'
+    depends_on:
+      - mongodb
+    networks:
+      - network-simple-crud
+
+  app-two:
+    image: ifundeasy/simple-crud:latest
+    labels:
+      - com.host.description=app
+    environment:
+      APP_NAME: app-two
+      APP_PORT: "3000"
+      OTEL_RPC_URI: host.docker.internal:4317
+      EXTERNAL_API: http://app-one:3000/products
+      MONGO_URI: mongodb://root:mypswd123@mongodb:27017
+      MONGO_DB_NAME: monitoring
+    ports:
+      - '4001:3000'
+    depends_on:
+      - mongodb
+    networks:
+      - network-simple-crud
+
+volumes:
+  data-simple-crud-mongodb:
+
+networks:
+  network-simple-crud:
+    driver: bridge

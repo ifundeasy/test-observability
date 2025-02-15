@@ -1,0 +1,46 @@
+name: observer-mimir
+
+services:
+  gateway:
+    image: nginx:1.27.4
+    networks:
+      - network-observer-mimir
+    hostname: gateway
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - "primary"
+      - "secondary"
+    ports:
+      - 9009:9009
+
+  primary:
+    image: &mimirImage grafana/mimir:2.15.0
+    networks:
+      - network-observer-mimir
+    hostname: primary
+    volumes:
+      - data-observer-primary:/data
+      - ./config.yaml:/etc/config.yaml
+      - ./alertmanager-fallback-config.yaml:/etc/alertmanager-fallback-config.yaml
+    command: -config.file=/etc/config.yaml
+    
+
+  secondary:
+    image: *mimirImage
+    networks:
+      - network-observer-mimir
+    hostname: secondary
+    volumes:
+      - data-observer-secondary:/data
+      - ./config.yaml:/etc/config.yaml
+      - ./alertmanager-fallback-config.yaml:/etc/alertmanager-fallback-config.yaml
+    command: -config.file=/etc/config.yaml
+
+volumes:
+  data-observer-primary:
+  data-observer-secondary:
+
+networks:
+  network-observer-mimir:
+    driver: bridge

@@ -1,0 +1,89 @@
+livedebugging {
+  enabled = true
+}
+
+/* Logger */
+discovery.docker "containers" {
+  host   = "unix:///var/run/docker.sock"
+  filter {
+    name   = "label"
+    values = ["com.host.description=app"]
+  }
+}
+
+loki.source.docker "default" {
+  host       = "unix:///var/run/docker.sock"
+  targets    = discovery.docker.containers.targets
+  forward_to = [loki.write.default.receiver]
+}
+
+loki.write "default" {
+  endpoint {
+    url = "http://host.docker.internal:3110/loki/api/v1/push"
+  }
+}
+
+/* Tracer */
+otelcol.receiver.otlp "otlp_receiver" {
+  grpc {
+    endpoint = "0.0.0.0:4317"
+  }
+  http {
+    endpoint = "0.0.0.0:4318"
+  }
+  output {
+    traces = [
+      otelcol.connector.servicegraph.default.input,
+      otelcol.exporter.otlp.default.input,
+      otelcol.connector.spanlogs.default.input,
+    ]
+  }
+}
+
+otelcol.connector.servicegraph "default" {
+  dimensions = ["http.method", "http.target"]
+  output {
+    metrics = [otelcol.exporter.otlp.default.input]
+  }
+}
+
+otelcol.connector.spanlogs "default" {
+  roots           = true
+  span_attributes = ["http.method", "http.target"]
+
+  output {
+    logs = [
+      otelcol.exporter.otlp.default.input,
+      otelcol.exporter.loki.default.input,
+    ]
+  }
+}
+
+otelcol.exporter.loki "default" {
+  forward_to = [loki.write.default.receiver]
+}
+
+otelcol.exporter.otlp "default" {
+  client {
+    endpoint = "host.docker.internal:4317"
+    tls {
+			insecure = true
+		}
+  }
+}
+
+
+/* Metric */
+prometheus.exporter.self "self_metrics" {
+}
+
+prometheus.scrape "self_scrape" {
+  targets    = prometheus.exporter.self.self_metrics.targets
+  forward_to = [prometheus.remote_write.mimir.receiver]
+}
+
+prometheus.remote_write "mimir" {
+  endpoint {
+    url = "http://host.docker.internal:9009/api/v1/push"
+  }
+}

@@ -1,0 +1,28 @@
+name: observer-collector
+
+services:
+  alloy:
+    image: &alloyImage grafana/alloy:v1.6.1
+    ports:
+      - 12345:12345
+    volumes:
+      - data-observer-collector:/var/lib/alloy
+
+      # scenario -- this alloy config will watch all of container STDOUT logs
+      - ./config.alloy:/etc/alloy/config.alloy
+
+       # binding docker.sock so alloy can access through docker unix socket from inside container
+      - /var/run/docker.sock:/var/run/docker.sock
+
+      # docker log directory as default, even though you app not writing to file.
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+    command: run --server.http.listen-addr=0.0.0.0:12345 --storage.path=/var/lib/alloy/data /etc/alloy/config.alloy
+    networks:
+      - network-observer-collector
+
+volumes:
+  data-observer-collector:
+
+networks:
+  network-observer-collector:
+    driver: bridge

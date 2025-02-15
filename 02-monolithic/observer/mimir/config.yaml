@@ -1,0 +1,41 @@
+
+multitenancy_enabled: false
+
+server:
+  log_level: info
+
+target: all,alertmanager,overrides-exporter
+
+# Use memberlist, a gossip-based protocol, to enable the 3 Mimir replicas to communicate
+memberlist:
+  join_members: [primary, secondary]
+
+common:
+  storage:
+    backend: s3
+    s3:
+      insecure: true
+      endpoint: host.docker.internal:4566
+      region: us-east-1
+      secret_access_key: default
+      access_key_id: mypswd123
+      bucket_name: mimir-data
+
+# Blocks storage requires a prefix when using a common object storage bucket.
+blocks_storage:
+  storage_prefix: blocks
+  tsdb:
+    dir: /data/ingester
+
+ruler:
+  rule_path: /data/ruler
+  alertmanager_url: http://127.0.0.1:8080/alertmanager
+  ring:
+    # Quickly detect unhealthy rulers to speed up the tutorial.
+    heartbeat_period: 2s
+    heartbeat_timeout: 10s
+
+alertmanager:
+  data_dir: /data/alertmanager
+  fallback_config_file: /etc/alertmanager-fallback-config.yaml
+  external_url: http://localhost:9009/alertmanager

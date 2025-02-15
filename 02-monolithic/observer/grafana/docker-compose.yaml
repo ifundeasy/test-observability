@@ -1,0 +1,46 @@
+name: observer-grafana
+
+services:
+  grafana:
+    image: &grafanaImage grafana/grafana:11.5.1
+    networks:
+      - network-observer-grafana
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: true # remove this
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Admin # remove this
+      GF_USERS_DEFAULT_THEME: light # remove this
+      
+      GF_DATABASE_TYPE: mysql
+      GF_DATABASE_HOST: host.docker.internal:3306
+      GF_DATABASE_NAME: grafana
+      GF_DATABASE_USER: default
+      GF_DATABASE_PASSWORD: mypswd123
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_FEATURE_TOGGLES_ENABLE: traceqlEditor
+      GF_INSTALL_PLUGINS: "https://storage.googleapis.com/integration-artifacts/grafana-exploretraces-app/grafana-exploretraces-app-latest.zip;grafana-traces-app"
+    ports:
+      - 3000:3000/tcp
+    volumes:
+      - data-observer-grafana:/var/lib/grafana
+      - ./provisioning/dashboards.yaml:/etc/grafana/provisioning/dashboards/dashboards.yml:ro
+      - ./provisioning/datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yml:ro
+      # Explicitly list the dashboards we want to show in the demo. We intentionally exclude dashboards that require
+      # Kubernetes metrics (eg. resources or networking) and other services not available in the demo (eg. Grafana Loki).
+      - ./dashboard/mimir-alertmanager.json:/var/lib/grafana/dashboards/mimir-alertmanager.json:ro
+      - ./dashboard/mimir-compactor.json:/var/lib/grafana/dashboards/mimir-compactor.json:ro
+      - ./dashboard/mimir-object-store.json:/var/lib/grafana/dashboards/mimir-object-store.json:ro
+      - ./dashboard/mimir-overrides.json:/var/lib/grafana/dashboards/mimir-overrides.json:ro
+      - ./dashboard/mimir-queries.json:/var/lib/grafana/dashboards/mimir-queries.json:ro
+      - ./dashboard/mimir-reads.json:/var/lib/grafana/dashboards/mimir-reads.json:ro
+      - ./dashboard/mimir-ruler.json:/var/lib/grafana/dashboards/mimir-ruler.json:ro
+      - ./dashboard/mimir-tenants.json:/var/lib/grafana/dashboards/mimir-tenants.json:ro
+      - ./dashboard/mimir-top-tenants.json:/var/lib/grafana/dashboards/mimir-top-tenants.json:ro
+      - ./dashboard/mimir-writes.json:/var/lib/grafana/dashboards/mimir-writes.json:ro
+
+volumes:
+  data-observer-grafana:
+
+networks:
+  network-observer-grafana:
+    driver: bridge

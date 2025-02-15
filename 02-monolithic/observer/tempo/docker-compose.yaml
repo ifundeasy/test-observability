@@ -1,0 +1,21 @@
+name: observer-tempo
+
+services:
+  tempo:
+    image: &tempoImage grafana/tempo:2.7.0
+    ports:
+      - "3200:3200" # tempo
+      - "4317:4317" # otlp grpc
+      - "4318:4318" # otlp http
+    volumes:
+      - data-observer-tempo:/var/tempo
+      - ./config.yaml:/etc/config.yaml
+    command: -config.file=/etc/config.yaml
+    networks:
+      - network-observer-tempo
+volumes:
+  data-observer-tempo:
+
+networks:
+  network-observer-tempo:
+    driver: bridge
